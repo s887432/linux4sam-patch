@@ -1,0 +1,204 @@
+diff --git a/arch/arm/boot/dts/at91-sam9x60ek.dts b/arch/arm/boot/dts/at91-sam9x60ek.dts
+index 9fe51f368627..ad52d3742003 100644
+--- a/arch/arm/boot/dts/at91-sam9x60ek.dts
++++ b/arch/arm/boot/dts/at91-sam9x60ek.dts
+@@ -94,7 +94,7 @@ leds {
+ 		compatible = "gpio-leds";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&pinctrl_gpio_leds>;
+-		status = "okay"; /* Conflict with pwm0. */
++		status = "disabled"; /* Conflict with pwm0. */
+ 
+ 		red {
+ 			label = "red";
+@@ -112,6 +112,11 @@ blue {
+ 			linux,default-trigger = "heartbeat";
+ 		};
+ 	};
++	
++	backlight: backlight {
++            compatible = "gpio-backlight";
++            gpios = <&pioB 14 GPIO_ACTIVE_HIGH>;
++    };
+ };
+ 
+ &adc {
+@@ -119,7 +124,7 @@ &adc {
+ 	vref-supply = <&vdd1_3v3>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_adc_default &pinctrl_adtrg_default>;
+-	status = "okay";
++	status = "disabled";
+ };
+ 
+ &can0 {
+@@ -239,16 +244,32 @@ eeprom@53 {
+ 
+ &flx4 {
+ 	atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_SPI>;
+-	status = "disabled";
++	status = "okay";
+ 
+ 	spi4: spi@400 {
+-		dmas = <0>, <0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "microchip,sam9x60-spi", "atmel,at91rm9200-spi";
++		reg = <0x400 0x200>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&pinctrl_flx4_default>;
+-		status = "disabled";
++		clocks = <&pmc PMC_TYPE_PERIPHERAL 13>;
++		clock-names = "spi_clk";
++		dmas = <0>, <0>;
++		status = "okay";
++
++		display@0{
++			compatible = "adafruit,yx240qv29","ilitek,ili9341";
++			reg = <0>;
++			spi-max-frequency = <32000000>;
++			reset-gpios = <&pioB 13 GPIO_ACTIVE_HIGH>;
++			dc-gpios = <&pioB 15 GPIO_ACTIVE_HIGH>;
++			rotation = <270>;
++		};
+ 	};
+ };
+ 
++
+ &flx5 {
+ 	atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_USART>;
+ 	status = "okay";
+@@ -533,6 +554,13 @@ pinctrl_key_gpio_default: pinctrl_key_gpio {
+ 		};
+ 	};
+ 
++	gpio_displays {
++		pinctrl_gpio_displays: pinctrl_display_gpio {
++			atmel,pins = <AT91_PIOB 13 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP
++					AT91_PIOB 15 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP>;
++		};
++	};
++
+ 	usb0 {
+ 		pinctrl_usba_vbus: usba_vbus {
+ 			atmel,pins = <AT91_PIOB 16 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
+diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
+index 6d69a2177949..cbf90e94a87a 100644
+--- a/arch/arm/configs/sama5_defconfig
++++ b/arch/arm/configs/sama5_defconfig
+@@ -329,3 +329,4 @@ CONFIG_DEBUG_MEMORY_INIT=y
+ # CONFIG_SCHED_DEBUG is not set
+ # CONFIG_FTRACE is not set
+ CONFIG_DEBUG_USER=y
++CONFIG_TINYDRM_ILI9341=y
+\ No newline at end of file
+diff --git a/drivers/gpu/drm/drm_mipi_dbi.c b/drivers/gpu/drm/drm_mipi_dbi.c
+index 00d470ff071d..7b9f08f1d77b 100644
+--- a/drivers/gpu/drm/drm_mipi_dbi.c
++++ b/drivers/gpu/drm/drm_mipi_dbi.c
+@@ -1073,17 +1073,19 @@ static int mipi_dbi_typec3_command(struct mipi_dbi *dbi, u8 *cmd,
+ 	MIPI_DBI_DEBUG_COMMAND(*cmd, par, num);
+ 
+ 	gpiod_set_value_cansleep(dbi->dc, 0);
+-	speed_hz = mipi_dbi_spi_cmd_max_speed(spi, 1);
++	//speed_hz = mipi_dbi_spi_cmd_max_speed(spi, 1);
++	speed_hz = spi->max_speed_hz;
+ 	ret = mipi_dbi_spi_transfer(spi, speed_hz, 8, cmd, 1);
+ 	if (ret || !num)
+ 		return ret;
+ 
+-	if (*cmd == MIPI_DCS_WRITE_MEMORY_START && !dbi->swap_bytes)
+-		bpw = 16;
++	//if (*cmd == MIPI_DCS_WRITE_MEMORY_START && !dbi->swap_bytes)
++	//	bpw = 16;
+ 
+ 	gpiod_set_value_cansleep(dbi->dc, 1);
+-	speed_hz = mipi_dbi_spi_cmd_max_speed(spi, num);
+-
++	//speed_hz = mipi_dbi_spi_cmd_max_speed(spi, num);
++	speed_hz = spi->max_speed_hz;
++	
+ 	return mipi_dbi_spi_transfer(spi, speed_hz, bpw, par, num);
+ }
+ 
+diff --git a/drivers/gpu/drm/tiny/ili9341.c b/drivers/gpu/drm/tiny/ili9341.c
+index 37e0c33399c8..2abff39b9d8d 100644
+--- a/drivers/gpu/drm/tiny/ili9341.c
++++ b/drivers/gpu/drm/tiny/ili9341.c
+@@ -180,6 +180,7 @@ static int ili9341_probe(struct spi_device *spi)
+ 	struct mipi_dbi *dbi;
+ 	struct gpio_desc *dc;
+ 	u32 rotation = 0;
++	u32 speed_hz = 0;
+ 	int ret;
+ 
+ 	dbidev = devm_drm_dev_alloc(dev, &ili9341_driver,
+@@ -203,23 +204,28 @@ static int ili9341_probe(struct spi_device *spi)
+ 		return PTR_ERR(dbidev->backlight);
+ 
+ 	device_property_read_u32(dev, "rotation", &rotation);
++	device_property_read_u32(dev, "spi-max-frequency", &speed_hz);
++	spi->max_speed_hz = speed_hz;
+ 
+ 	ret = mipi_dbi_spi_init(spi, dbi, dc);
+-	if (ret)
++	if (ret) {
+ 		return ret;
++	}
+ 
+ 	ret = mipi_dbi_dev_init(dbidev, &ili9341_pipe_funcs, &yx240qv29_mode, rotation);
+-	if (ret)
++	if (ret) {
+ 		return ret;
++	}
+ 
+ 	drm_mode_config_reset(drm);
+ 
+ 	ret = drm_dev_register(drm, 0);
+-	if (ret)
++	if (ret) {
+ 		return ret;
++	}
+ 
+ 	spi_set_drvdata(spi, drm);
+-
++	
+ 	drm_fbdev_generic_setup(drm, 0);
+ 
+ 	return 0;
+diff --git a/drivers/gpu/drm/tiny/st7735r.c b/drivers/gpu/drm/tiny/st7735r.c
+index 713e4b286210..614f0d62c435 100644
+--- a/drivers/gpu/drm/tiny/st7735r.c
++++ b/drivers/gpu/drm/tiny/st7735r.c
+@@ -191,6 +191,7 @@ static int st7735r_probe(struct spi_device *spi)
+ 	u32 rotation = 0;
+ 	int ret;
+ 
++	printk(KERN_INFO "[st7735r] %s @ %d\r\n", __func__, __LINE__);
+ 	cfg = device_get_match_data(&spi->dev);
+ 	if (!cfg)
+ 		cfg = (void *)spi_get_device_id(spi)->driver_data;
+@@ -215,9 +216,14 @@ static int st7735r_probe(struct spi_device *spi)
+ 		return dev_err_probe(dev, PTR_ERR(dc), "Failed to get GPIO 'dc'\n");
+ 
+ 	dbidev->backlight = devm_of_find_backlight(dev);
+-	if (IS_ERR(dbidev->backlight))
++	if (IS_ERR(dbidev->backlight)) {
++		printk(KERN_INFO "[st7735r] %s @ %d\r\n", __func__, __LINE__);
++		printk(KERN_INFO "[st7735r] backlight error\r\n");
+ 		return PTR_ERR(dbidev->backlight);
++	}
+ 
++	printk(KERN_INFO "[st7735r] %s @ %d\r\n", __func__, __LINE__);
++	
+ 	device_property_read_u32(dev, "rotation", &rotation);
+ 
+ 	ret = mipi_dbi_spi_init(spi, dbi, dc);
+@@ -245,6 +251,7 @@ static int st7735r_probe(struct spi_device *spi)
+ 
+ 	drm_fbdev_generic_setup(drm, 0);
+ 
++	printk(KERN_INFO "[st7735r] %s @ %d\r\n", __func__, __LINE__);
+ 	return 0;
+ }
+ 
