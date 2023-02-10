@@ -1,0 +1,225 @@
+diff --git a/arch/arm/boot/dts/at91-sam9x60_curiosity.dts b/arch/arm/boot/dts/at91-sam9x60_curiosity.dts
+index 08f174bb7976..0be6a958b7fd 100644
+--- a/arch/arm/boot/dts/at91-sam9x60_curiosity.dts
++++ b/arch/arm/boot/dts/at91-sam9x60_curiosity.dts
+@@ -114,7 +114,7 @@ &adc {
+ 	vref-supply = <&vdd1_3v3>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_adc_default &pinctrl_adtrg_default>;
+-	status = "okay";
++	status = "disabled";
+ };
+ 
+ &can0 {
+@@ -222,6 +222,31 @@ eeprom@53 {
+ 	};
+ };
+ 
++&flx5 {
++	atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_SPI>;
++	status = "okay";
++
++	spi5: spi@400 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		//dmas = <0>, <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_flx5_default>;
++		status = "okay";
++		
++		display@0 {
++			//compatible="adafruit,yx240qv29","ilitek,ili9341";
++			compatible = "jianda,jd-t18003-t01", "sitronix,st7735r";
++			reg=<0>;
++			spi-max-frequency=<10000000>;
++			reset-gpio=<&pioB 14 GPIO_ACTIVE_HIGH>;	// mikroBus AN
++			dc-gpios=<&pioB 13 GPIO_ACTIVE_HIGH>;		// mikroBus PWM
++			rotation=<270>;
++		};
++	};
++};
++
+ &flx6 {
+ 	atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_TWI>;
+ 	status = "okay";
+@@ -357,6 +382,14 @@ pinctrl_flx7_default: flx7_usart {
+ 				<AT91_PIOC 0 AT91_PERIPH_C AT91_PINCTRL_NONE
+ 				 AT91_PIOC 1 AT91_PERIPH_C AT91_PINCTRL_NONE>;
+ 		};
++		
++		pinctrl_flx5_default: flx5_spi {
++			atmel,pins =
++				<AT91_PIOA 21 AT91_PERIPH_B AT91_PINCTRL_NONE
++				 AT91_PIOA 22 AT91_PERIPH_B AT91_PINCTRL_NONE
++				 AT91_PIOA 23 AT91_PERIPH_B AT91_PINCTRL_NONE
++				 AT91_PIOA  8 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++		};
+ 	};
+ 
+ 	gpio_keys {
+@@ -466,7 +499,7 @@ pinctrl_usb_default: usb_default {
+ &pwm0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_pwm0_0 &pinctrl_pwm0_1 &pinctrl_pwm0_2>;
+-	status = "okay";
++	status = "disabled";
+ };
+ 
+ &sdmmc0 {
+diff --git a/arch/arm/boot/dts/at91-sam9x60ek.dts b/arch/arm/boot/dts/at91-sam9x60ek.dts
+index 9fe51f368627..e1f19858cb8d 100644
+--- a/arch/arm/boot/dts/at91-sam9x60ek.dts
++++ b/arch/arm/boot/dts/at91-sam9x60ek.dts
+@@ -94,7 +94,7 @@ leds {
+ 		compatible = "gpio-leds";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&pinctrl_gpio_leds>;
+-		status = "okay"; /* Conflict with pwm0. */
++		status = "disabled"; /* Conflict with pwm0. */
+ 
+ 		red {
+ 			label = "red";
+@@ -119,7 +119,7 @@ &adc {
+ 	vref-supply = <&vdd1_3v3>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_adc_default &pinctrl_adtrg_default>;
+-	status = "okay";
++	status = "disabled";
+ };
+ 
+ &can0 {
+@@ -239,13 +239,26 @@ eeprom@53 {
+ 
+ &flx4 {
+ 	atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_SPI>;
+-	status = "disabled";
++	status = "okay";
+ 
+ 	spi4: spi@400 {
+-		dmas = <0>, <0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		//dmas = <0>, <0>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&pinctrl_flx4_default>;
+-		status = "disabled";
++		status = "okay";
++		
++		display@0 {
++			//compatible="adafruit,yx240qv29","ilitek,ili9341";
++			compatible = "jianda,jd-t18003-t01", "sitronix,st7735r";
++			reg=<0>;
++			spi-max-frequency=<10000000>;
++			reset-gpio=<&pioB 15 GPIO_ACTIVE_HIGH>;
++			dc-gpios=<&pioB 13 GPIO_ACTIVE_HIGH>;
++			rotation=<270>;
++		};
+ 	};
+ };
+ 
+diff --git a/arch/arm/boot/dts/at91-sama5d27_som1_ek.dts b/arch/arm/boot/dts/at91-sama5d27_som1_ek.dts
+index 08f0d4b995ff..369f4872678f 100644
+--- a/arch/arm/boot/dts/at91-sama5d27_som1_ek.dts
++++ b/arch/arm/boot/dts/at91-sama5d27_som1_ek.dts
+@@ -199,10 +199,29 @@ uart9: serial@200 {
+ 				};
+ 
+ 				spi6: spi@400 {
+-					dmas = <0>, <0>;
++					//dmas = <0>, <0>;
+ 					pinctrl-names = "default";
+ 					pinctrl-0 = <&pinctrl_mikrobus_spi &pinctrl_mikrobus1_spi_cs &pinctrl_mikrobus2_spi_cs>;
+ 					status = "okay"; /* Conflict with uart5 and i2c6. */
++					
++					#address-calls = <1>;
++					#size-cells = <0>;
++					
++					display@0 {
++						//compatible="adafruit,yx240qv29","ilitek,ili9341";
++						compatible = "jianda,jd-t18003-t01", "sitronix,st7735r";
++						reg=<0>;
++						spi-max-frequency=<32000000>;
++						// mikroBus 2
++						reset-gpio=<&pioA PIN_PD26 GPIO_ACTIVE_HIGH>;
++						dc-gpios=<&pioA PIN_PA31 GPIO_ACTIVE_HIGH>;
++						/*
++						// mikroBus 1
++						reset-gpio=<&pioA PIN_PD25 GPIO_ACTIVE_HIGH>;
++						dc-gpios=<&pioA PIN_PB1 GPIO_ACTIVE_HIGH>;
++						*/
++						rotation=<270>;
++					};
+ 				};
+ 
+ 				i2c6: i2c@600 {
+diff --git a/drivers/gpu/drm/drm_mipi_dbi.c b/drivers/gpu/drm/drm_mipi_dbi.c
+index 00d470ff071d..726d1b3574bf 100644
+--- a/drivers/gpu/drm/drm_mipi_dbi.c
++++ b/drivers/gpu/drm/drm_mipi_dbi.c
+@@ -1073,16 +1073,18 @@ static int mipi_dbi_typec3_command(struct mipi_dbi *dbi, u8 *cmd,
+ 	MIPI_DBI_DEBUG_COMMAND(*cmd, par, num);
+ 
+ 	gpiod_set_value_cansleep(dbi->dc, 0);
+-	speed_hz = mipi_dbi_spi_cmd_max_speed(spi, 1);
++	//speed_hz = mipi_dbi_spi_cmd_max_speed(spi, 1);
++	speed_hz = spi->max_speed_hz;
+ 	ret = mipi_dbi_spi_transfer(spi, speed_hz, 8, cmd, 1);
+ 	if (ret || !num)
+ 		return ret;
+ 
+-	if (*cmd == MIPI_DCS_WRITE_MEMORY_START && !dbi->swap_bytes)
+-		bpw = 16;
++	//if (*cmd == MIPI_DCS_WRITE_MEMORY_START && !dbi->swap_bytes)
++	//	bpw = 16;
+ 
+ 	gpiod_set_value_cansleep(dbi->dc, 1);
+-	speed_hz = mipi_dbi_spi_cmd_max_speed(spi, num);
++	//speed_hz = mipi_dbi_spi_cmd_max_speed(spi, 1);
++	speed_hz = spi->max_speed_hz;
+ 
+ 	return mipi_dbi_spi_transfer(spi, speed_hz, bpw, par, num);
+ }
+diff --git a/drivers/gpu/drm/tiny/ili9341.c b/drivers/gpu/drm/tiny/ili9341.c
+index 37e0c33399c8..bd7ad3360f65 100644
+--- a/drivers/gpu/drm/tiny/ili9341.c
++++ b/drivers/gpu/drm/tiny/ili9341.c
+@@ -180,6 +180,7 @@ static int ili9341_probe(struct spi_device *spi)
+ 	struct mipi_dbi *dbi;
+ 	struct gpio_desc *dc;
+ 	u32 rotation = 0;
++	u32 speed_hz = 0;
+ 	int ret;
+ 
+ 	dbidev = devm_drm_dev_alloc(dev, &ili9341_driver,
+@@ -203,6 +204,8 @@ static int ili9341_probe(struct spi_device *spi)
+ 		return PTR_ERR(dbidev->backlight);
+ 
+ 	device_property_read_u32(dev, "rotation", &rotation);
++	device_property_read_u32(dev, "spi-max-frequency", &speed_hz);
++	spi->max_speed_hz = speed_hz;
+ 
+ 	ret = mipi_dbi_spi_init(spi, dbi, dc);
+ 	if (ret)
+diff --git a/drivers/gpu/drm/tiny/st7735r.c b/drivers/gpu/drm/tiny/st7735r.c
+index 713e4b286210..a573c47b23a7 100644
+--- a/drivers/gpu/drm/tiny/st7735r.c
++++ b/drivers/gpu/drm/tiny/st7735r.c
+@@ -189,6 +189,7 @@ static int st7735r_probe(struct spi_device *spi)
+ 	struct mipi_dbi *dbi;
+ 	struct gpio_desc *dc;
+ 	u32 rotation = 0;
++	u32 speed_hz = 0;
+ 	int ret;
+ 
+ 	cfg = device_get_match_data(&spi->dev);
+@@ -219,6 +220,8 @@ static int st7735r_probe(struct spi_device *spi)
+ 		return PTR_ERR(dbidev->backlight);
+ 
+ 	device_property_read_u32(dev, "rotation", &rotation);
++	device_property_read_u32(dev, "spi-max-frequency", &speed_hz);
++	spi->max_speed_hz = speed_hz;
+ 
+ 	ret = mipi_dbi_spi_init(spi, dbi, dc);
+ 	if (ret)
