@@ -1,0 +1,162 @@
+diff --git a/board/microchip/sama5d4_xplained/uboot-env-nand.txt b/board/microchip/sama5d4_xplained/uboot-env-nand.txt
+index 900c49b..58d0573 100644
+--- a/board/microchip/sama5d4_xplained/uboot-env-nand.txt
++++ b/board/microchip/sama5d4_xplained/uboot-env-nand.txt
+@@ -1,28 +1,7 @@
+ baudrate=115200
+-video_mode_pda4=Unknown-1:480x272-16
+-video_mode_pda5=Unknown-1:800x480-16
+-video_mode_pda7=Unknown-1:800x480-16
+-video_mode_pda7b=Unknown-1:800x480-16
+-video_mode_hdmi=HDMI-A-1:1152x768-16
+-sdio_overlay=wilc_sdio
+-spi_overlay=wilc_spi
+-at91_pda_detect=run pda4300test; run pda7000test; run pda7000btest; run pda5000test;run hdmi_test; run pda4301test; run pda4301btest;
+-pda7000btest=test -n $display && test $display = 7000B && setenv display_var 'pda7b' && setenv video_mode ${video_mode_pda7b}
+-at91_set_display=test -n $pda && setenv display $pda
+-pda4300test=test -n $display && test $display = 4300 && setenv display_var 'pda4' && setenv video_mode ${video_mode_pda4}
+-pda4301test=test -n $display && test $display = 4301 && setenv display_var 'pda4' && setenv video_mode ${video_mode_pda4}
+-pda4301btest=test -n $display && test $display = 4301B && setenv display_var 'pda4' && setenv video_mode ${video_mode_pda4}
+-at91_prepare_bootargs=test -n $display_var && setenv bootargs ${bootargs} ${at91_video_bootargs}
+-hdmi_test=test -n $display && test $display = hdmi && setenv display_var 'hdmi' && setenv video_mode ${video_mode_hdmi}
+-at91_prepare_video_bootargs=test -n $display_var && setenv at91_video_bootargs video=${video_mode}
+-pda7000test=test -n $display && test $display = 7000 && setenv display_var 'pda7' && setenv video_mode ${video_mode_pda7}
+-at91_prepare_overlays_config=test -n $display_var && setenv at91_overlays_config '#'${display_var}
+-at91_prepare_sdio_overlay=setenv wilc_sdio_overlay_config '#'${sdio_overlay}
+-at91_prepare_spi_overlay=setenv wilc_spi_overlay_config '#'${spi_overlay}
+-bootcmd=run at91_set_display; run at91_pda_detect; run at91_prepare_video_bootargs; run at91_prepare_bootargs; run at91_prepare_overlays_config; run at91_prepare_sdio_overlay; run at91_prepare_spi_overlay; run bootcmd_boot;
+-pda5000test=test -n $display && test $display = 5000 && setenv display_var 'pda5' && setenv video_mode ${video_mode_pda5}
++bootcmd=run bootcmd_boot;
+ bootargs=console=ttyS0,115200 mtdparts=atmel_nand:256k(bootstrap)ro,768k(uboot)ro,256k(env_redundant),256k(env),6656k(itb)ro,-(rootfs) rootfstype=ubifs ubi.mtd=5 root=ubi0:rootfs rw
+-bootcmd_boot=nand read 0x24000000 0x00180000 0x680000; bootm 0x24000000#kernel_dtb${at91_overlays_config}${wilc_sdio_overlay_config}${wilc_spi_overlay_config}
++bootcmd_boot=nand read 0x24000000 0x00180000 0x680000; bootm 0x24000000#kernel_dtb${at91_overlays_config}
+ bootdelay=1
+ stderr=serial
+ stdin=serial
+diff --git a/configs/sama5d4_xplained_nf_headless_defconfig b/configs/sama5d4_xplained_nf_headless_defconfig
+new file mode 100644
+index 0000000..d45398d
+--- /dev/null
++++ b/configs/sama5d4_xplained_nf_headless_defconfig
+@@ -0,0 +1,121 @@
++BR2_arm=y
++BR2_cortex_a5=y
++BR2_ARM_ENABLE_NEON=y
++BR2_ARM_ENABLE_VFP=y
++BR2_ARM_INSTRUCTIONS_THUMB2=y
++BR2_GLOBAL_PATCH_DIR="$(BR2_EXTERNAL_MCHP_PATH)/patches"
++BR2_TOOLCHAIN_BUILDROOT_GLIBC=y
++BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_15=y
++BR2_TOOLCHAIN_BUILDROOT_CXX=y
++BR2_PACKAGE_HOST_GDB=y
++BR2_PACKAGE_HOST_GDB_TUI=y
++BR2_PACKAGE_HOST_GDB_PYTHON3=y
++BR2_PACKAGE_HOST_GDB_SIM=y
++BR2_TARGET_GENERIC_HOSTNAME="halley"
++BR2_TARGET_GENERIC_ISSUE="Patrick MQTT Broker"
++BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_EUDEV=y
++BR2_SYSTEM_DHCP="eth0"
++BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_MCHP_PATH)/board/microchip/sama5/fs-overlay/"
++
++BR2_LINUX_KERNEL=y
++BR2_LINUX_KERNEL_CUSTOM_TARBALL=y
++BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="$(call github,linux4microchip,linux,linux4microchip-2022.10)/linux-linux4microchip-2022.10.tar.gz"
++BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
++BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_MCHP_PATH)/board/microchip/sama5d4_xplained/linux.config"
++BR2_LINUX_KERNEL_DTS_SUPPORT=y
++BR2_LINUX_KERNEL_INTREE_DTS_NAME="at91-sama5d4_xplained"
++
++BR2_PACKAGE_BUSYBOX_SHOW_OTHERS=y
++BR2_PACKAGE_GDB=y
++BR2_PACKAGE_GDB_SERVER=y
++BR2_PACKAGE_GDB_DEBUGGER=y
++BR2_PACKAGE_LMBENCH=y
++BR2_PACKAGE_STRACE=y
++BR2_PACKAGE_TINYMEMBENCH=y
++BR2_PACKAGE_TRACE_CMD=y
++BR2_PACKAGE_WHETSTONE=y
++BR2_PACKAGE_DOSFSTOOLS=y
++BR2_PACKAGE_DOSFSTOOLS_FATLABEL=y
++BR2_PACKAGE_DOSFSTOOLS_FSCK_FAT=y
++BR2_PACKAGE_DOSFSTOOLS_MKFS_FAT=y
++BR2_PACKAGE_MTD=y
++BR2_PACKAGE_EVTEST=y
++BR2_PACKAGE_SETSERIAL=y
++BR2_PACKAGE_LUA=y
++BR2_PACKAGE_NODEJS=y
++BR2_PACKAGE_NODEJS_NPM=y
++BR2_PACKAGE_PYTHON3=y
++BR2_PACKAGE_PYTHON3_PY_PYC=y
++BR2_PACKAGE_PYTHON3_CURSES=y
++BR2_PACKAGE_PYTHON3_READLINE=y
++BR2_PACKAGE_PYTHON3_SSL=y
++BR2_PACKAGE_PYTHON_SETUPTOOLS=y
++BR2_PACKAGE_CA_CERTIFICATES=y
++BR2_PACKAGE_CJSON=y
++BR2_PACKAGE_CRDA=y
++BR2_PACKAGE_DHCP=y
++BR2_PACKAGE_DHCP_SERVER=y
++BR2_PACKAGE_DHCP_SERVER_DELAYED_ACK=y
++BR2_PACKAGE_DHCP_RELAY=y
++BR2_PACKAGE_DHCPCD=y
++BR2_PACKAGE_DROPBEAR=y
++BR2_PACKAGE_DROPBEAR_DISABLE_REVERSEDNS=y
++BR2_PACKAGE_ETHTOOL=y
++BR2_PACKAGE_IFUPDOWN=y
++BR2_PACKAGE_IPERF3=y
++BR2_PACKAGE_IPROUTE2=y
++BR2_PACKAGE_IPTABLES=y
++BR2_PACKAGE_IW=y
++BR2_PACKAGE_LRZSZ=y
++BR2_PACKAGE_MII_DIAG=y
++BR2_PACKAGE_NET_TOOLS=y
++BR2_PACKAGE_NETCAT_OPENBSD=y
++BR2_PACKAGE_NFTABLES=y
++BR2_PACKAGE_OPENSSH=y
++BR2_PACKAGE_PHYTOOL=y
++BR2_PACKAGE_RADVD=y
++BR2_PACKAGE_RSYNC=y
++BR2_PACKAGE_TCPDUMP=y
++BR2_PACKAGE_TRACEROUTE=y
++BR2_PACKAGE_TIME=y
++BR2_PACKAGE_UTIL_LINUX_BINARIES=y
++BR2_PACKAGE_HTOP=y
++BR2_PACKAGE_NEOFETCH=y
++BR2_PACKAGE_MOSQUITTO=y
++BR2_PACKAGE_PAHO_MQTT_C=y
++BR2_PACKAGE_PAHO_MQTT_CPP=y
++
++BR2_TARGET_ROOTFS_UBI=y
++BR2_TARGET_ROOTFS_UBI_PEBSIZE=0x40000
++BR2_TARGET_ROOTFS_UBI_SUBSIZE=0
++BR2_TARGET_ROOTFS_UBIFS_LEBSIZE=0x3e000
++BR2_TARGET_ROOTFS_UBIFS_MINIOSIZE=0x1000
++BR2_TARGET_ROOTFS_UBIFS_MAXLEBCNT=2048
++BR2_TARGET_ROOTFS_UBIFS_RT_NONE=y
++
++BR2_TARGET_AT91BOOTSTRAP3=y
++BR2_TARGET_AT91BOOTSTRAP3_CUSTOM_GIT=y
++BR2_TARGET_AT91BOOTSTRAP3_CUSTOM_REPO_URL="https://github.com/linux4sam/at91bootstrap.git"
++BR2_TARGET_AT91BOOTSTRAP3_CUSTOM_REPO_VERSION="v4.0.5"
++BR2_TARGET_AT91BOOTSTRAP3_DEFCONFIG="sama5d4_xplainednf_uboot_secure"
++
++BR2_TARGET_UBOOT=y
++BR2_TARGET_UBOOT_BUILD_SYSTEM_KCONFIG=y
++BR2_TARGET_UBOOT_CUSTOM_GIT=y
++BR2_TARGET_UBOOT_CUSTOM_REPO_URL="https://github.com/linux4sam/u-boot-at91.git"
++BR2_TARGET_UBOOT_CUSTOM_REPO_VERSION="linux4sam-2022.10"
++BR2_TARGET_UBOOT_BOARD_DEFCONFIG="sama5d4_xplained_nandflash"
++BR2_TARGET_UBOOT_NEEDS_DTC=y
++
++BR2_PACKAGE_HOST_DOSFSTOOLS=y
++BR2_PACKAGE_HOST_MTOOLS=y
++
++BR2_PACKAGE_HOST_UBOOT_TOOLS=y
++BR2_PACKAGE_HOST_UBOOT_TOOLS_FIT_SUPPORT=y
++BR2_PACKAGE_HOST_UBOOT_TOOLS_ENVIMAGE=y
++BR2_PACKAGE_HOST_UBOOT_TOOLS_ENVIMAGE_SOURCE="$(BR2_EXTERNAL_MCHP_PATH)/board/microchip/sama5d4_xplained/uboot-env-nand.txt"
++BR2_PACKAGE_HOST_UBOOT_TOOLS_ENVIMAGE_SIZE="0x4000"
++
++BR2_PACKAGE_DT_OVERLAY_MCHP=y
++BR2_PACKAGE_DT_OVERLAY_MCHP_PLATFORM="sama5d4_xplained"
++
